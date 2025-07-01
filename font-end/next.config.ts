@@ -1,7 +1,10 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  experimental: { appDir: true },
+  i18n: {
+    locales: ['zh-TW', 'en'],
+    defaultLocale: 'zh-TW',
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
