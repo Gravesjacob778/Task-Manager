@@ -1,22 +1,26 @@
-import { NextIntlClientProvider, useMessages } from 'next-intl';
-
-import { ReactNode } from 'react';
-
-interface LocaleLayoutProps {
-  children: ReactNode;
-  params: {
-    locale: string;
-  };
-}
-
-export default function LocaleLayout({ children, params: { locale } }: LocaleLayoutProps) {
-  const messages = useMessages(); // 會自動對應語系
+import {NextIntlClientProvider, hasLocale} from 'next-intl';
+import {notFound} from 'next/navigation';
+import {routing} from '@/i18n/routing';
+ import '@/app/globals.css';
+export default async function LocaleLayout({
+  children,
+  params
+}: {
+  children: React.ReactNode;
+  params: Promise<{locale: string}>;
+}) {
+  // Ensure that the incoming `locale` is valid
+  const {locale} = await params;
+  console.info(`Locale "${locale}" is being used.`);
+  if (!hasLocale(routing.locales, locale)) {
+    // If the locale is not supported, redirect to
+    notFound();
+  }
+ 
   return (
     <html lang={locale}>
       <body>
-        <NextIntlClientProvider messages={messages} locale={locale}>
-          {children}
-        </NextIntlClientProvider>
+        <NextIntlClientProvider>{children}</NextIntlClientProvider>
       </body>
     </html>
   );

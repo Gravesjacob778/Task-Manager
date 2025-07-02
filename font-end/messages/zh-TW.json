@@ -1,0 +1,8 @@
+{
+  "home": {
+    "title": "任務管理系統",
+    "description": "一個使用 Next.js 和 TypeScript 構建的簡單任務管理系統。",
+    "start": "開始使用",
+    "report": "查看報表"
+  }
+}

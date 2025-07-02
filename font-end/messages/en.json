@@ -1,0 +1,8 @@
+{
+  "home": {
+    "title": "Task Manager System",
+    "description": "A simple task management system built with Next.js and TypeScript.",
+    "start": "Get Started",
+    "report": "View Report"
+  }
+}
