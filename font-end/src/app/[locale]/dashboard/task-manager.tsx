@@ -1,7 +1,6 @@
 "use client";
 import React, { useState } from 'react';
 import { Plus, X, CheckCircle, Clock, Search } from 'lucide-react';
-import CircularSidebar from '@/components/circular-sidebar';
 
 const TaskManager = () => {
   const [tasks, setTasks] = useState([
@@ -92,7 +91,7 @@ const TaskManager = () => {
                          task.description.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesFilter && matchesSearch;
   });
-
+  
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-6xl mx-auto">
