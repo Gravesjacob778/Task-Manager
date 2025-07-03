@@ -1,3 +1,6 @@
+using DataBase.Models;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.EntityFrameworkCore;
 
 namespace back_end;
 
@@ -8,16 +11,30 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
         builder.AddServiceDefaults();
 
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("TaskManager", policy =>
+            {
+                policy.WithOrigins("http://localhost:3000")
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials();
+            });
+        });
+
         // Add services to the container.
 
         builder.Services.AddControllers();
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
+        builder.Services.AddDbContext<TempdbContext>(options =>
+            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
         var app = builder.Build();
 
         app.MapDefaultEndpoints();
 
+        
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
@@ -25,6 +42,8 @@ public class Program
         }
 
         app.UseHttpsRedirection();
+
+        app.UseCors("TaskManager");
 
         app.UseAuthorization();
 

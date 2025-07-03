@@ -1,97 +1,94 @@
 "use client";
-import React, { useState } from 'react';
-import { Plus, X, CheckCircle, Clock, Search } from 'lucide-react';
-
+import React, { useEffect, useState } from "react";
+import { Plus, X, CheckCircle, Clock, Search } from "lucide-react";
+import taskService from "@/services/taskService";
+import { Task } from "@/model/taskModel";
 const TaskManager = () => {
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      title: '完成 React 專案',
-      description: '使用 Next.js 和 Tailwind 建立任務管理系統',
-      priority: 'high',
-      status: 'in-progress',
-      dueDate: '2025-07-03',
-      tags: ['React', 'Next.js']
-    },
-    {
-      id: 2,
-      title: '學習 TypeScript',
-      description: '深入了解 TypeScript 的進階特性',
-      priority: 'medium',
-      status: 'todo',
-      dueDate: '2025-07-05',
-      tags: ['TypeScript', '學習']
-    },
-    {
-      id: 3,
-      title: '寫技術文章',
-      description: '分享最近學到的前端技術',
-      priority: 'low',
-      status: 'completed',
-      dueDate: '2025-06-30',
-      tags: ['寫作', '分享']
-    }
-  ]);
-
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [filter, setFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [filter, setFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
   const [newTask, setNewTask] = useState({
-    title: '',
-    description: '',
-    priority: 'medium',
-    dueDate: ''
-  });
-
-  const addTask = () => {
-    if (newTask.title.trim()) {
-      const task = {
-        id: Date.now(),
-        ...newTask,
-        status: 'todo',
-        tags: []
-      };
-      setTasks([...tasks, task]);
-      setNewTask({ title: '', description: '', priority: 'medium', dueDate: '' });
-      setShowAddForm(false);
-    }
-  };
+    title: "",
+    description: "",
+    priority: "medium",
+    dueDate: "",
+  } as Task);
+  useEffect(() => {
+    getTasks();
+  }, []);
+  function addTask() {
+    taskService
+      .create(newTask)
+      .then((isSuccess) => {
+        if (isSuccess) {
+          alert("任務新增成功");
+          getTasks();
+          setShowAddForm(false);
+        }
+      })
+      .catch((error) => {
+        alert(error);
+      });
+  }
 
   const updateTaskStatus = (id, newStatus) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, status: newStatus } : task
-    ));
+    setTasks(
+      tasks.map((task) =>
+        task.id === id ? { ...task, status: newStatus } : task
+      )
+    );
   };
 
   const deleteTask = (id) => {
-    setTasks(tasks.filter(task => task.id !== id));
+    setTasks(tasks.filter((task) => task.id !== id));
   };
 
   const getPriorityColor = (priority) => {
-    switch(priority) {
-      case 'high': return 'border-red-500 bg-red-500/10';
-      case 'medium': return 'border-yellow-500 bg-yellow-500/10';
-      case 'low': return 'border-green-500 bg-green-500/10';
-      default: return 'border-gray-500 bg-gray-500/10';
+    switch (priority) {
+      case "high":
+        return "border-red-500 bg-red-500/10";
+      case "medium":
+        return "border-yellow-500 bg-yellow-500/10";
+      case "low":
+        return "border-green-500 bg-green-500/10";
+      default:
+        return "border-gray-500 bg-gray-500/10";
     }
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
-      case 'completed': return 'text-green-400';
-      case 'in-progress': return 'text-blue-400';
-      case 'todo': return 'text-gray-400';
-      default: return 'text-gray-400';
+    switch (status) {
+      case "completed":
+        return "text-green-400";
+      case "in-progress":
+        return "text-blue-400";
+      case "todo":
+        return "text-gray-400";
+      default:
+        return "text-gray-400";
     }
   };
 
-  const filteredTasks = tasks.filter(task => {
-    const matchesFilter = filter === 'all' || task.status === filter;
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.description.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredTasks = tasks.filter((task) => {
+    const matchesFilter = filter === "all" || task.status === filter;
+    const matchesSearch =
+      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.description!.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesFilter && matchesSearch;
   });
-  
+
+  function getTasks() {
+    taskService
+      .obtain("ALL")
+      .then((res) => {
+        setTasks(res);
+      })
+      .catch((error) => {
+        alert(error);
+      });
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-6xl mx-auto">
@@ -115,7 +112,10 @@ const TaskManager = () => {
         {/* Search and Filter */}
         <div className="flex gap-4 mb-6">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={16}
+            />
             <input
               type="text"
               placeholder="搜尋任務..."
@@ -146,18 +146,24 @@ const TaskManager = () => {
                   type="text"
                   placeholder="任務標題"
                   value={newTask.title}
-                  onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+                  onChange={(e) =>
+                    setNewTask({ ...newTask, title: e.target.value })
+                  }
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
                 />
                 <textarea
                   placeholder="任務描述"
                   value={newTask.description}
-                  onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                  onChange={(e) =>
+                    setNewTask({ ...newTask, description: e.target.value })
+                  }
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 h-24 resize-none"
                 />
                 <select
                   value={newTask.priority}
-                  onChange={(e) => setNewTask({...newTask, priority: e.target.value})}
+                  onChange={(e) =>
+                    setNewTask({ ...newTask, priority: e.target.value })
+                  }
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
                 >
                   <option value="low">低優先級</option>
@@ -167,7 +173,9 @@ const TaskManager = () => {
                 <input
                   type="date"
                   value={newTask.dueDate}
-                  onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
+                  onChange={(e) =>
+                    setNewTask({ ...newTask, dueDate: e.target.value })
+                  }
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -191,10 +199,12 @@ const TaskManager = () => {
 
         {/* Tasks Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTasks.map(task => (
+          {filteredTasks.map((task) => (
             <div
               key={task.id}
-              className={`bg-gray-800 rounded-xl p-6 border-l-4 ${getPriorityColor(task.priority)} hover:bg-gray-750 transition-all duration-200 hover:scale-105`}
+              className={`bg-gray-800 rounded-xl p-6 border-l-4 ${getPriorityColor(
+                task.priority
+              )} hover:bg-gray-750 transition-all duration-200 hover:scale-105`}
             >
               <div className="flex items-start justify-between mb-3">
                 <h3 className="font-semibold text-lg">{task.title}</h3>
@@ -205,13 +215,16 @@ const TaskManager = () => {
                   <X size={16} />
                 </button>
               </div>
-              
+
               <p className="text-gray-300 text-sm mb-4">{task.description}</p>
-              
+
               <div className="flex items-center gap-2 mb-3">
                 <span className={`capitalize ${getStatusColor(task.status)}`}>
-                  {task.status === 'todo' ? '待辦' : 
-                   task.status === 'in-progress' ? '進行中' : '已完成'}
+                  {task.status === "todo"
+                    ? "待辦"
+                    : task.status === "in-progress"
+                    ? "進行中"
+                    : "已完成"}
                 </span>
                 {task.dueDate && (
                   <div className="flex items-center gap-1 text-gray-400 text-xs">
@@ -223,25 +236,33 @@ const TaskManager = () => {
 
               <div className="flex items-center justify-between">
                 <div className="flex gap-1">
-                  {task.tags.map(tag => (
-                    <span key={tag} className="bg-gray-700 text-xs px-2 py-1 rounded">
+                  {task.tagsArray?.map((tag) => (
+                    <span
+                      key={tag}
+                      className="bg-gray-700 text-xs px-2 py-1 rounded"
+                    >
                       {tag}
                     </span>
                   ))}
                 </div>
-                
+
                 <div className="flex gap-2">
-                  {task.status !== 'completed' && (
+                  {task.status !== "completed" && (
                     <button
-                      onClick={() => updateTaskStatus(task.id, task.status === 'todo' ? 'in-progress' : 'completed')}
+                      onClick={() =>
+                        updateTaskStatus(
+                          task.id,
+                          task.status === "todo" ? "in-progress" : "completed"
+                        )
+                      }
                       className="text-green-400 hover:text-green-300 transition-colors"
                     >
                       <CheckCircle size={16} />
                     </button>
                   )}
-                  {task.status === 'completed' && (
+                  {task.status === "completed" && (
                     <button
-                      onClick={() => updateTaskStatus(task.id, 'todo')}
+                      onClick={() => updateTaskStatus(task.id, "todo")}
                       className="text-gray-400 hover:text-gray-300 transition-colors"
                     >
                       重新開始
