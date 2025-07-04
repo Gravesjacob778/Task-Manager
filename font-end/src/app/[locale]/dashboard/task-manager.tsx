@@ -1,9 +1,11 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { FC, useEffect, useState } from "react";
 import { Plus, X, CheckCircle, Clock, Search } from "lucide-react";
 import taskService from "@/services/taskService";
 import { Task } from "@/model/taskModel";
-const TaskManager = () => {
+import { useGlobalModal } from '../../../contexts/ModalContext';
+const TaskManager: FC = () => {
+  const { success, error, warning, confirm } = useGlobalModal();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [filter, setFilter] = useState("all");
@@ -12,23 +14,41 @@ const TaskManager = () => {
     title: "",
     description: "",
     priority: "medium",
-    dueDate: "",
+    dueDate: new Date().toISOString().split("T")[0], // Default to today's date
+    status: "todo",
+    tags: "",
   } as Task);
   useEffect(() => {
     getTasks();
   }, []);
   function addTask() {
+    newTask.tags = newTask.tagsArray?.join(",") || "";
     taskService
       .create(newTask)
       .then((isSuccess) => {
         if (isSuccess) {
-          alert("任務新增成功");
+          success('成功', '操作完成');
           getTasks();
           setShowAddForm(false);
+        } else{
+          warning('警告', '操作未完成');
         }
       })
-      .catch((error) => {
-        alert(error);
+      .catch((exc) => {
+        console.error(exc);
+        error('錯誤', '無法新增任務');
+      })
+      .finally(() => {
+        setNewTask({
+          id: "",
+          title: "",
+          description: "",
+          priority: "medium",
+          dueDate: "",
+          status: "todo",
+          tags: "",
+          tagsArray: [],
+        });
       });
   }
 
@@ -40,11 +60,28 @@ const TaskManager = () => {
     );
   };
 
-  const deleteTask = (id) => {
-    setTasks(tasks.filter((task) => task.id !== id));
+  function deleteTask(id: string) {
+    debugger
+    confirm("確認刪除", "確定要刪除這個任務嗎？", {
+      onConfirm: () => {
+        taskService
+          .delete(id)
+          .then((isSuccess) => {
+            if (isSuccess) {
+              success('成功', '任務已刪除');
+            } else {
+              warning('警告', '操作未完成');
+            }
+          })
+          .catch((exc) => {
+            console.error(exc);
+            error('錯誤', '無法刪除任務');
+          });
+      }
+    });
   };
 
-  const getPriorityColor = (priority) => {
+  const getPriorityColor = (priority: string | undefined) => {
     switch (priority) {
       case "high":
         return "border-red-500 bg-red-500/10";
@@ -57,7 +94,7 @@ const TaskManager = () => {
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string | undefined) => {
     switch (status) {
       case "completed":
         return "text-green-400";
@@ -84,11 +121,20 @@ const TaskManager = () => {
       .then((res) => {
         setTasks(res);
       })
-      .catch((error) => {
-        alert(error);
+      .catch((exc) => {
+        console.error(exc);
+        error("錯誤", "無法獲取任務");
       });
   }
-
+  function setTaskTagsArray(tag: { value: string; label: string }) {
+    const tags = Array.isArray(newTask.tagsArray) ? newTask.tagsArray : [];
+    if (tags.includes(tag.value)) {
+      setNewTask({ ...newTask, tagsArray: tags.filter(t => t !== tag.value) });
+    } else {
+      setNewTask({ ...newTask, tagsArray: [...tags, tag.value] });
+    }
+  }
+  
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-6xl mx-auto">
@@ -139,44 +185,85 @@ const TaskManager = () => {
         {/* Add Task Form */}
         {showAddForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md">
+            <div className="bg-gray-800 rounded-xl p-6 w-full max-w-lg min-w-[280px] sm:min-w-[400px] md:min-w-[500px]">
               <h2 className="text-xl font-bold mb-4">新增任務</h2>
               <div className="space-y-4">
+                <label className="block text-sm font-medium mb-1">任務標題</label>
                 <input
                   type="text"
                   placeholder="任務標題"
                   value={newTask.title}
-                  onChange={(e) =>
-                    setNewTask({ ...newTask, title: e.target.value })
-                  }
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
                 />
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-1">到期日</label>
+                    <input
+                      type="date"
+                      value={newTask.dueDate}
+                      onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-1">狀態</label>
+                    <select
+                      value={newTask.status || "todo"}
+                      onChange={e => setNewTask({ ...newTask, status: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="todo">待辦</option>
+                      <option value="in-progress">進行中</option>
+                      <option value="completed">已完成</option>
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-1">優先級</label>
+                    <select
+                      value={newTask.priority}
+                      onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="low">低優先級</option>
+                      <option value="medium">中優先級</option>
+                      <option value="high">高優先級</option>
+                    </select>
+                  </div>
+                </div>
+                <label className="block text-sm font-medium mb-1">標籤</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {[
+                    { value: "work", label: "工作" },
+                    { value: "personal", label: "個人" },
+                    { value: "urgent", label: "緊急" },
+                    { value: "study", label: "學習" },
+                    { value: "other", label: "其他" },
+                  ].map(tag => (
+                    <button
+                      type="button"
+                      key={tag.value}
+                      className={`px-3 py-1 rounded-full border border-gray-500 text-sm transition-colors ${Array.isArray(newTask.tagsArray) && newTask.tagsArray.includes(tag.value) ? 'bg-gray-600 text-white border-blue-400' : 'bg-transparent text-gray-200 hover:bg-gray-700'}`}
+                      onClick={() => setTaskTagsArray(tag)}
+                    >
+                      + {tag.label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="px-2 py-1 rounded-full border border-gray-500 text-sm text-gray-200 hover:bg-gray-700"
+                    onClick={() => setNewTask({ ...newTask, tagsArray: [] })}
+                    title="清除全部標籤"
+                  >
+                    ↻
+                  </button>
+                </div>
+                <label className="block text-sm font-medium mb-1">任務描述</label>
                 <textarea
                   placeholder="任務描述"
                   value={newTask.description}
-                  onChange={(e) =>
-                    setNewTask({ ...newTask, description: e.target.value })
-                  }
+                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 h-24 resize-none"
-                />
-                <select
-                  value={newTask.priority}
-                  onChange={(e) =>
-                    setNewTask({ ...newTask, priority: e.target.value })
-                  }
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-                >
-                  <option value="low">低優先級</option>
-                  <option value="medium">中優先級</option>
-                  <option value="high">高優先級</option>
-                </select>
-                <input
-                  type="date"
-                  value={newTask.dueDate}
-                  onChange={(e) =>
-                    setNewTask({ ...newTask, dueDate: e.target.value })
-                  }
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
                 />
               </div>
               <div className="flex gap-2 mt-6">
@@ -209,7 +296,7 @@ const TaskManager = () => {
               <div className="flex items-start justify-between mb-3">
                 <h3 className="font-semibold text-lg">{task.title}</h3>
                 <button
-                  onClick={() => deleteTask(task.id)}
+                  onClick={() => deleteTask(task.id!)}
                   className="text-gray-400 hover:text-red-400 transition-colors"
                 >
                   <X size={16} />

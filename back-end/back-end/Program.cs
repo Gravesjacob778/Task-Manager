@@ -1,3 +1,4 @@
+using back_end.Infrastructure.Filters;
 using DataBase.Models;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +34,8 @@ public class Program
         var app = builder.Build();
 
         app.MapDefaultEndpoints();
+
+        app.UseMiddleware<Middleware.HttpResponseWrapperMiddleware>();
 
         
         // Configure the HTTP request pipeline.

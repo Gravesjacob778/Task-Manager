@@ -1,12 +1,13 @@
-using System;
-using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 
 namespace DataBase.Models;
 
-public partial class Task
+public class Task
 {
-    public int Id { get; set; }
-
+    [MaybeNull]
+    public Guid? Id { get; set; }
+    [Required]
     public string Title { get; set; } = null!;
 
     public string? Description { get; set; }
