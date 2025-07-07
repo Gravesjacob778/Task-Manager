@@ -29,7 +29,7 @@ interface ModalMethods {
   success: (title: string, message: string, options?: ModalOptions) => void;
   error: (title: string, message: string, options?: ModalOptions) => void;
   warning: (title: string, message: string, options?: ModalOptions) => void;
-  confirm: (title: string, message: string, options?: ModalOptions) => Promise<boolean>;
+  confirm: (title: string, message: string, options?: ModalOptions) =>void;
 }
 
 // 創建 Context
@@ -50,7 +50,7 @@ export const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
       <Modal 
         modal={modalMethods.modal} 
         onClose={modalMethods.closeModal} 
-        onConfirm={modalMethods.modal?.onConfirm}
+        // onConfirm={modalMethods.modal?.onConfirm}
       />
     </ModalContext.Provider>
   );

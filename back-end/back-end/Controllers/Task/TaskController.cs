@@ -20,9 +20,9 @@ namespace back_end.Controllers.Task
                 return Ok(await context.Tasks.ToListAsync());
             }
 
-            if (int.TryParse(id, out int taskId))
+            if (Guid.TryParse(id, out Guid guid))
             {
-                var task = await context.Tasks.FindAsync(taskId);
+                var task = await context.Tasks.FindAsync(guid);
                 if (task == null)
                 {
                     return NotFound();
@@ -37,9 +37,6 @@ namespace back_end.Controllers.Task
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] DataBase.Models.Task newTask)
         {
-            //if (newTask == null || string.IsNullOrWhiteSpace(newTask.Title))
-            //    return BadRequest("任務名稱不可為空");
-            newTask.Id = Guid.NewGuid();
             context.Tasks.Add(newTask);
             await context.SaveChangesAsync();
             return Ok();
@@ -77,9 +74,13 @@ namespace back_end.Controllers.Task
 
         // 刪除任務
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(string id)
         {
-            var task = await context.Tasks.FindAsync(id);
+            if (!Guid.TryParse(id, out Guid guid))
+            {
+                return BadRequest("Invalid ID format");
+            }
+            var task = await context.Tasks.FindAsync(guid);
             if (task == null)
             {
                 return NotFound();
@@ -88,7 +89,7 @@ namespace back_end.Controllers.Task
             context.Tasks.Remove(task);
             await context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok();
         }
 
         

@@ -27,7 +27,7 @@ interface UseModalReturn {
   success: (title: string, message: string, options?: ModalOptions) => void;
   error: (title: string, message: string, options?: ModalOptions) => void;
   warning: (title: string, message: string, options?: ModalOptions) => void;
-  confirm: (title: string, message: string, options?: ModalOptions) => Promise<boolean>;
+  confirm: (title: string, message: string, options?: ModalOptions) => void;
 }
 
 const useModal = (): UseModalReturn => {
@@ -77,23 +77,18 @@ const useModal = (): UseModalReturn => {
     });
   };
 
-  // 確認對話框
-  const confirm = (title: string, message: string, options: ModalOptions = {}): Promise<boolean> => {
-    return new Promise((resolve) => {
-      showModal({
-        type: 'confirm',
-        title,
-        message,
-        showCancel: true,
-        confirmText: '確認',
-        cancelText: '取消',
-        ...options,
-        onConfirm: () => resolve(true),
-        onCancel: () => resolve(false)
-      });
+
+  const confirm = (title: string, message: string, options: ModalOptions = {}): void => {
+    showModal({
+      type: 'confirm',
+      title,
+      message,
+      showCancel: true,
+      confirmText: '確認',
+      cancelText: '取消',
+      ...options,
     });
   };
-
   return {
     modal,
     closeModal,

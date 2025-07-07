@@ -4,6 +4,8 @@ import { Plus, X, CheckCircle, Clock, Search } from "lucide-react";
 import taskService from "@/services/taskService";
 import { Task } from "@/model/taskModel";
 import { useGlobalModal } from '../../../contexts/ModalContext';
+import { v4 as uuid } from 'uuid';
+
 const TaskManager: FC = () => {
   const { success, error, warning, confirm } = useGlobalModal();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -11,6 +13,7 @@ const TaskManager: FC = () => {
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [newTask, setNewTask] = useState({
+    id: uuid(), // Generate a unique ID for the new task
     title: "",
     description: "",
     priority: "medium",
@@ -61,22 +64,24 @@ const TaskManager: FC = () => {
   };
 
   function deleteTask(id: string) {
-    debugger
     confirm("確認刪除", "確定要刪除這個任務嗎？", {
+      confirmText: "刪除",
+      cancelText: "取消",
       onConfirm: () => {
         taskService
-          .delete(id)
-          .then((isSuccess) => {
-            if (isSuccess) {
-              success('成功', '任務已刪除');
-            } else {
-              warning('警告', '操作未完成');
-            }
-          })
-          .catch((exc) => {
-            console.error(exc);
-            error('錯誤', '無法刪除任務');
-          });
+        .delete(id)
+        .then((isSuccess) => {
+          if (isSuccess) {
+            success('成功', '任務已刪除');
+            getTasks();
+          } else {
+            warning('警告', '操作未完成');
+          }
+        })
+        .catch((exc) => {
+          console.error(exc);
+          error('錯誤', '無法刪除任務');
+        });
       }
     });
   };

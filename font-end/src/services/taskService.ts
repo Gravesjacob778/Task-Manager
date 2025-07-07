@@ -32,7 +32,7 @@ class TaskService extends BaseService implements IService  {
   }
 
   async delete(id: string): Promise<any> {
-    return this.delete(`${this.baseUrl}/Task/Delete/${id}`);
+    return super.delete(`${this.baseUrl}/Task/Delete/${id}`);
   }
 }
 

@@ -62,7 +62,7 @@ const Backdrop: React.FC<BackdropProps> = ({ onClick }) => (
 );
 
 // 主要 Modal 元件
-const Modal: React.FC<ModalProps> = ({ modal, onClose, onConfirm }) => {
+const Modal: React.FC<ModalProps> = ({ modal, onClose }) => {
   useEffect(() => {
     if (!modal) return;
 
@@ -86,9 +86,8 @@ const Modal: React.FC<ModalProps> = ({ modal, onClose, onConfirm }) => {
   const { icon: Icon, iconColor, confirmColor } = MODAL_TYPES[modal.type];
 
   const handleConfirm = (): void => {
-    console.log('Modal confirmed');
-    if (onConfirm) {
-      onConfirm();
+    if (modal.onConfirm) {
+      modal.onConfirm();
     }
     onClose();
   };
