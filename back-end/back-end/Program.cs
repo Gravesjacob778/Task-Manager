@@ -31,6 +31,11 @@ public class Program
         builder.Services.AddDbContext<TempdbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+        // Register local llama client (legacy)
+        builder.Services.AddLocalLlama(builder.Configuration);
+        // Register Semantic Kernel + LLamaSharpConnector
+        builder.Services.AddLlamaSharpConnector(builder.Configuration);
+
         var app = builder.Build();
 
         app.MapDefaultEndpoints();

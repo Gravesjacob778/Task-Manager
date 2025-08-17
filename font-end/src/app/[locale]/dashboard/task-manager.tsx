@@ -10,6 +10,7 @@ const TaskManager: FC = () => {
   const { success, error, warning, confirm } = useGlobalModal();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [newTask, setNewTask] = useState({
@@ -24,37 +25,6 @@ const TaskManager: FC = () => {
   useEffect(() => {
     getTasks();
   }, []);
-  function addTask() {
-    newTask.tags = newTask.tagsArray?.join(",") || "";
-    taskService
-      .create(newTask)
-      .then((isSuccess) => {
-        if (isSuccess) {
-          success('成功', '操作完成');
-          getTasks();
-          setShowAddForm(false);
-        } else{
-          warning('警告', '操作未完成');
-        }
-      })
-      .catch((exc) => {
-        console.error(exc);
-        error('錯誤', '無法新增任務');
-      })
-      .finally(() => {
-        setNewTask({
-          id: "",
-          title: "",
-          description: "",
-          priority: "medium",
-          dueDate: "",
-          status: "todo",
-          tags: "",
-          tagsArray: [],
-        });
-      });
-  }
-
   const updateTaskStatus = (id, newStatus) => {
     setTasks(
       tasks.map((task) =>
@@ -139,7 +109,49 @@ const TaskManager: FC = () => {
       setNewTask({ ...newTask, tagsArray: [...tags, tag.value] });
     }
   }
-  
+  const resetForm = () => {
+    setNewTask({
+      id: uuid(),
+      title: "",
+      description: "",
+      priority: "medium",
+      dueDate: new Date().toISOString().split("T")[0],
+      status: "todo",
+      tags: "",
+      tagsArray: [],
+    });
+    setIsEditMode(false);
+    setShowAddForm(false);
+  };
+
+  const handleEdit = (task: Task) => {
+    setNewTask({
+      ...task,
+      tagsArray: task.tags ? task.tags.split(',') : []
+    });
+    setIsEditMode(true);
+    setShowAddForm(true);
+  };
+
+  function handleSubmit() {
+    newTask.tags = newTask.tagsArray?.join(",") || "";
+    const action = isEditMode ? taskService.update(newTask.id!, newTask) : taskService.create(newTask);
+    
+    action.then((isSuccess) => {
+      if (isSuccess) {
+        success('成功', isEditMode ? '更新完成' : '新增完成');
+        getTasks();
+        resetForm();
+      } else {
+        warning('警告', '操作未完成');
+      }
+    })
+    .catch((exc) => {
+      console.error(exc);
+      error('錯誤', isEditMode ? '無法更新任務' : '無法新增任務');
+    });
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-6xl mx-auto">
@@ -191,7 +203,7 @@ const TaskManager: FC = () => {
         {showAddForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-gray-800 rounded-xl p-6 w-full max-w-lg min-w-[280px] sm:min-w-[400px] md:min-w-[500px]">
-              <h2 className="text-xl font-bold mb-4">新增任務</h2>
+              <h2 className="text-xl font-bold mb-4">{isEditMode ? '編輯任務' : '新增任務'}</h2>
               <div className="space-y-4">
                 <label className="block text-sm font-medium mb-1">任務標題</label>
                 <input
@@ -273,10 +285,10 @@ const TaskManager: FC = () => {
               </div>
               <div className="flex gap-2 mt-6">
                 <button
-                  onClick={addTask}
+                  onClick={handleSubmit}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded-lg transition-colors"
                 >
-                  新增
+                  {isEditMode ? '更新' : '新增'}
                 </button>
                 <button
                   onClick={() => setShowAddForm(false)}
@@ -339,27 +351,29 @@ const TaskManager: FC = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  {task.status !== "completed" && (
+                    {task.status !== "completed" && (
+                      <button
+                        onClick={() =>
+                          updateTaskStatus(
+                            task.id,
+                            task.status === "todo" ? "in-progress" : "completed"
+                          )
+                        }
+                        className="text-green-400 hover:text-green-300 transition-colors"
+                        title={task.status === "todo" ? "開始進行" : "標記完成"}
+                      >
+                        <CheckCircle size={16} />
+                      </button>
+                    )}
                     <button
-                      onClick={() =>
-                        updateTaskStatus(
-                          task.id,
-                          task.status === "todo" ? "in-progress" : "completed"
-                        )
-                      }
-                      className="text-green-400 hover:text-green-300 transition-colors"
+                      onClick={() => handleEdit(task)}
+                      className="text-blue-400 hover:text-blue-300 transition-colors"
+                      title="編輯任務"
                     >
-                      <CheckCircle size={16} />
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                      </svg>
                     </button>
-                  )}
-                  {task.status === "completed" && (
-                    <button
-                      onClick={() => updateTaskStatus(task.id, "todo")}
-                      className="text-gray-400 hover:text-gray-300 transition-colors"
-                    >
-                      重新開始
-                    </button>
-                  )}
                 </div>
               </div>
             </div>

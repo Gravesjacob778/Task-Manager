@@ -9,54 +9,32 @@ import {
   MoreVertical,
   Search,
   Plus,
-  MessageCircle,
-  User,
-  Hash,
   Volume2,
   VolumeX,
   Mic,
   MicOff,
-  Image,
-  FileText,
-  Heart,
-  ThumbsUp,
-  Laugh
+  Image as ImageIcon
 } from 'lucide-react';
+import aiChatService from '@/services/aiChatService';
+
+interface Message {
+  id: number;
+  sender: string;
+  content: string;
+  timestamp: string;
+  type: 'sent' | 'received';
+  avatar: string;
+}
 
 export default function ChatWindow() {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      sender: 'AI助手',
-      content: '嘿！歡迎來到超炫聊天室！有什麼我可以幫你的嗎？ 🤖',
-      timestamp: '14:30',
-      type: 'received',
-      avatar: '🤖'
-    },
-    {
-      id: 2,
-      sender: 'DeadpoolUser',
-      content: '哇！這個聊天介面超酷的！',
-      timestamp: '14:32',
-      type: 'sent',
-      avatar: 'D'
-    },
-    {
-      id: 3,
-      sender: 'AI助手',
-      content: '謝謝誇獎！😎 我們可以聊各種話題，或者我可以幫你解決問題～',
-      timestamp: '14:33',
-      type: 'received',
-      avatar: '🤖'
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   const [newMessage, setNewMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isMicOn, setIsMicOn] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const contacts = [
     { id: 1, name: 'AI助手', status: 'online', avatar: '🤖', lastMessage: '謝謝誇獎！😎' },
@@ -75,10 +53,10 @@ export default function ChatWindow() {
     scrollToBottom();
   }, [messages]);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!newMessage.trim()) return;
 
-    const message = {
+    const userMessage: Message = {
       id: messages.length + 1,
       sender: 'DeadpoolUser',
       content: newMessage,
@@ -87,51 +65,59 @@ export default function ChatWindow() {
       avatar: 'D'
     };
 
-    setMessages(prev => [...prev, message]);
+    const currentMessage = newMessage;
+    setMessages(prev => [...prev, userMessage]);
     setNewMessage('');
-
-    // 模擬 AI 回覆
     setIsTyping(true);
-    setTimeout(() => {
-      const aiResponse = {
-        id: messages.length + 2,
-        sender: 'AI助手',
-        content: getAIResponse(newMessage),
-        timestamp: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
-        type: 'received',
-        avatar: '🤖'
-      };
-      setMessages(prev => [...prev, aiResponse]);
-      setIsTyping(false);
-    }, 1500);
+
+      // 呼叫後端 AI API，傳入對話歷史
+      aiChatService.sendMessage(currentMessage, messages.slice(-10))
+      .then(res => {
+        const response = res;
+        if (!response) {
+          throw new Error('AI 回應錯誤');
+        }
+        
+        const aiResponse: Message = {
+          id: messages.length + 2,
+          sender: 'AI助手',
+          content: response || '抱歉，我無法回應這個問題。',
+          timestamp: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+          type: 'received',
+          avatar: '🤖'
+        };
+
+        setMessages(prev => [...prev, aiResponse]);
+      }).catch(error => {
+        console.error('AI API 錯誤:', error);
+        const errorResponse: Message = {
+          id: messages.length + 2,
+          sender: 'AI助手',
+          content: '抱歉，發生錯誤，請稍後再試。',
+          timestamp: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+          type: 'received',
+          avatar: '🤖'
+        };
+        setMessages(prev => [...prev, errorResponse]);
+      }).finally(() => {
+        setIsTyping(false);
+        scrollToBottom();
+      });
   };
 
-  const getAIResponse = (message) => {
-    const responses = [
-      '哈哈，你說得對！😄',
-      '這是個有趣的想法！🤔',
-      '讓我想想... 🤖',
-      '太棒了！繼續說下去～ 🚀',
-      '我完全同意你的看法！👍',
-      '這個話題很有意思呢！✨',
-      '哇，你真的很厲害！🔥'
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
-  };
-
-  const addEmoji = (emoji) => {
+  const addEmoji = (emoji: string) => {
     setNewMessage(prev => prev + emoji);
     setShowEmojiPicker(false);
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
   };
 
-  const MessageBubble = ({ message }) => (
+  const MessageBubble = ({ message }: { message: Message }) => (
     <div className={`flex ${message.type === 'sent' ? 'justify-end' : 'justify-start'} mb-4 group`}>
       {message.type === 'received' && (
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center text-white font-bold text-sm mr-3 flex-shrink-0">
@@ -301,7 +287,7 @@ export default function ChatWindow() {
             </button>
             
             <button className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
-              <Image className="w-5 h-5 text-gray-400" />
+              <ImageIcon className="w-5 h-5 text-gray-400" />
             </button>
             
             <div className="flex-1 relative">
@@ -311,7 +297,7 @@ export default function ChatWindow() {
                 onKeyPress={handleKeyPress}
                 placeholder="輸入訊息..."
                 className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-colors resize-none"
-                rows="1"
+                rows={1}
               />
             </div>
             
