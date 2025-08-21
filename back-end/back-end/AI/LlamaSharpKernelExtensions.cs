@@ -1,9 +1,8 @@
-using back_end.AI;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.TextGeneration;
 using Microsoft.SemanticKernel;
 
-namespace back_end;
+namespace back_end.AI;
 
 public static class LlamaSharpKernelExtensions
 {
@@ -14,7 +13,7 @@ public static class LlamaSharpKernelExtensions
         var ctxSize = (uint)(config.GetValue<int?>("LocalLlama:ContextSize") ?? 2048);
         var gpuLayers = config.GetValue<int?>("LocalLlama:GpuLayers") ?? 0;
 
-        services.AddSingleton<LLamaSharpConnector>(sp => new LLamaSharpConnector(modelPath, ctxSize, gpuLayers));
+        services.AddSingleton(sp => new LLamaSharpConnector(modelPath, ctxSize, gpuLayers));
         services.AddSingleton<IChatCompletionService>(sp => sp.GetRequiredService<LLamaSharpConnector>());
         services.AddSingleton<ITextGenerationService>(sp => sp.GetRequiredService<LLamaSharpConnector>());
 

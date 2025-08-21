@@ -1,6 +1,4 @@
-using back_end.AI;
-
-namespace back_end;
+namespace back_end.AI;
 
 public static class AiServiceCollectionExtensions
 {
